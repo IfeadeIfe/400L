@@ -1,38 +1,31 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS  # Import CORS
 import joblib
-import numpy as np  # Import NumPy to handle data conversion
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Enable CORS for all domains
 
-# Load your trained model
+# Load model
 model = joblib.load("model.pkl")
 vectorizer = joblib.load("vectorizer.pkl")
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        data = request.json  # Get input from frontend
+        data = request.json
         text_input = data.get("text", "")
-
-        # Preprocess text
         text_vectorized = vectorizer.transform([text_input])
-
-        # Make prediction
         prediction = model.predict(text_vectorized)[0]
         probability = model.predict_proba(text_vectorized)[0].max()
 
-        # 🔹 Convert NumPy int64 to Python native types
         response = {
-            "threat_type": str(prediction),  # Convert to string (if needed)
-            "probability": float(probability)  # Convert to float
+            "threat_type": prediction,
+            "probability": float(probability)
         }
         return jsonify(response)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)})
 
 if __name__ == '__main__':
-    from waitress import serve
-    print("🚀 Running Flask with Waitress on port 5000...")
-    serve(app, host="0.0.0.0", port=5000)
+    app.run(debug=True)
+
